@@ -1,3 +1,9 @@
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
 import * as Y from "yjs";
 var textareaCaret = { exports: {} };
 (function(module) {
@@ -124,48 +130,13 @@ var rectangleOverlap = getOverlap;
 const events = ["keyup", "mouseup", "touchstart", "paste", "cut", "selectend"];
 class Cursor {
   constructor(fontSize, cssColor, element, name) {
-    Object.defineProperty(this, "_div", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_nameDiv", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_color", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_fontSize", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_selectedIndex", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_name", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_parent", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
+    __publicField(this, "_div");
+    __publicField(this, "_nameDiv");
+    __publicField(this, "_color");
+    __publicField(this, "_fontSize");
+    __publicField(this, "_selectedIndex");
+    __publicField(this, "_name");
+    __publicField(this, "_parent");
     this._selectedIndex = { start: -1, end: -1 };
     this._fontSize = fontSize;
     this._parent = element.offsetParent || document.body;
@@ -201,7 +172,7 @@ class Cursor {
       this._nameDiv.classList.add("nameTag");
       this._parent.appendChild(this._nameDiv);
     }
-    this._nameDiv.innerHTML = name;
+    this._nameDiv.innerText = name;
     this._nameDiv.style.backgroundColor = `rgba(${this._color.r}, ${this._color.g}, ${this._color.b}, 1.0)`;
     this._div.style.backgroundColor = `rgba(${this._color.r}, ${this._color.g}, ${this._color.b}, 0.4)`;
   }
@@ -265,30 +236,10 @@ class Cursor {
 }
 class TextAreaCursors {
   constructor(yText, textField, options) {
-    Object.defineProperty(this, "_unobserveFns", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: []
-    });
-    Object.defineProperty(this, "_cursors", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: /* @__PURE__ */ new Map()
-    });
-    Object.defineProperty(this, "_areaID", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: ""
-    });
-    Object.defineProperty(this, "_textField", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
+    __publicField(this, "_unobserveFns", []);
+    __publicField(this, "_cursors", /* @__PURE__ */ new Map());
+    __publicField(this, "_areaID", "");
+    __publicField(this, "_textField");
     this._areaID = textField.id;
     this._textField = textField;
     if (textField.id === "") {
@@ -410,7 +361,7 @@ class TextAreaCursors {
 var DIFF_DELETE = -1;
 var DIFF_INSERT = 1;
 var DIFF_EQUAL = 0;
-function diff_main(text1, text2, cursor_pos, _fix_unicode) {
+function diff_main(text1, text2, cursor_pos, cleanup, _fix_unicode) {
   if (text1 === text2) {
     if (text1) {
       return [[DIFF_EQUAL, text1]];
@@ -439,6 +390,9 @@ function diff_main(text1, text2, cursor_pos, _fix_unicode) {
     diffs.push([DIFF_EQUAL, commonsuffix]);
   }
   diff_cleanupMerge(diffs, _fix_unicode);
+  if (cleanup) {
+    diff_cleanupSemantic(diffs);
+  }
   return diffs;
 }
 function diff_compute_(text1, text2) {
@@ -464,7 +418,10 @@ function diff_compute_(text1, text2) {
     return diffs;
   }
   if (shorttext.length === 1) {
-    return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
+    return [
+      [DIFF_DELETE, text1],
+      [DIFF_INSERT, text2]
+    ];
   }
   var hm = diff_halfMatch_(text1, text2);
   if (hm) {
@@ -559,7 +516,10 @@ function diff_bisect_(text1, text2) {
       }
     }
   }
-  return [[DIFF_DELETE, text1], [DIFF_INSERT, text2]];
+  return [
+    [DIFF_DELETE, text1],
+    [DIFF_INSERT, text2]
+  ];
 }
 function diff_bisectSplit_(text1, text2, x, y) {
   var text1a = text1.substring(0, x);
@@ -591,6 +551,36 @@ function diff_commonPrefix(text1, text2) {
     pointermid--;
   }
   return pointermid;
+}
+function diff_commonOverlap_(text1, text2) {
+  var text1_length = text1.length;
+  var text2_length = text2.length;
+  if (text1_length == 0 || text2_length == 0) {
+    return 0;
+  }
+  if (text1_length > text2_length) {
+    text1 = text1.substring(text1_length - text2_length);
+  } else if (text1_length < text2_length) {
+    text2 = text2.substring(0, text1_length);
+  }
+  var text_length = Math.min(text1_length, text2_length);
+  if (text1 == text2) {
+    return text_length;
+  }
+  var best = 0;
+  var length = 1;
+  while (true) {
+    var pattern = text1.substring(text_length - length);
+    var found = text2.indexOf(pattern);
+    if (found == -1) {
+      return best;
+    }
+    length += found;
+    if (found == 0 || text1.substring(text_length - length) == text2.substring(0, length)) {
+      best = length;
+      length++;
+    }
+  }
 }
 function diff_commonSuffix(text1, text2) {
   if (!text1 || !text2 || text1.slice(-1) !== text2.slice(-1)) {
@@ -626,8 +616,14 @@ function diff_halfMatch_(text1, text2) {
     var best_common = "";
     var best_longtext_a, best_longtext_b, best_shorttext_a, best_shorttext_b;
     while ((j = shorttext2.indexOf(seed, j + 1)) !== -1) {
-      var prefixLength = diff_commonPrefix(longtext2.substring(i), shorttext2.substring(j));
-      var suffixLength = diff_commonSuffix(longtext2.substring(0, i), shorttext2.substring(0, j));
+      var prefixLength = diff_commonPrefix(
+        longtext2.substring(i),
+        shorttext2.substring(j)
+      );
+      var suffixLength = diff_commonSuffix(
+        longtext2.substring(0, i),
+        shorttext2.substring(0, j)
+      );
       if (best_common.length < suffixLength + prefixLength) {
         best_common = shorttext2.substring(j - suffixLength, j) + shorttext2.substring(j, j + prefixLength);
         best_longtext_a = longtext2.substring(0, i - suffixLength);
@@ -648,8 +644,16 @@ function diff_halfMatch_(text1, text2) {
       return null;
     }
   }
-  var hm1 = diff_halfMatchI_(longtext, shorttext, Math.ceil(longtext.length / 4));
-  var hm2 = diff_halfMatchI_(longtext, shorttext, Math.ceil(longtext.length / 2));
+  var hm1 = diff_halfMatchI_(
+    longtext,
+    shorttext,
+    Math.ceil(longtext.length / 4)
+  );
+  var hm2 = diff_halfMatchI_(
+    longtext,
+    shorttext,
+    Math.ceil(longtext.length / 2)
+  );
   var hm;
   if (!hm1 && !hm2) {
     return null;
@@ -674,6 +678,175 @@ function diff_halfMatch_(text1, text2) {
   }
   var mid_common = hm[4];
   return [text1_a, text1_b, text2_a, text2_b, mid_common];
+}
+function diff_cleanupSemantic(diffs) {
+  var changes = false;
+  var equalities = [];
+  var equalitiesLength = 0;
+  var lastequality = null;
+  var pointer = 0;
+  var length_insertions1 = 0;
+  var length_deletions1 = 0;
+  var length_insertions2 = 0;
+  var length_deletions2 = 0;
+  while (pointer < diffs.length) {
+    if (diffs[pointer][0] == DIFF_EQUAL) {
+      equalities[equalitiesLength++] = pointer;
+      length_insertions1 = length_insertions2;
+      length_deletions1 = length_deletions2;
+      length_insertions2 = 0;
+      length_deletions2 = 0;
+      lastequality = diffs[pointer][1];
+    } else {
+      if (diffs[pointer][0] == DIFF_INSERT) {
+        length_insertions2 += diffs[pointer][1].length;
+      } else {
+        length_deletions2 += diffs[pointer][1].length;
+      }
+      if (lastequality && lastequality.length <= Math.max(length_insertions1, length_deletions1) && lastequality.length <= Math.max(length_insertions2, length_deletions2)) {
+        diffs.splice(equalities[equalitiesLength - 1], 0, [
+          DIFF_DELETE,
+          lastequality
+        ]);
+        diffs[equalities[equalitiesLength - 1] + 1][0] = DIFF_INSERT;
+        equalitiesLength--;
+        equalitiesLength--;
+        pointer = equalitiesLength > 0 ? equalities[equalitiesLength - 1] : -1;
+        length_insertions1 = 0;
+        length_deletions1 = 0;
+        length_insertions2 = 0;
+        length_deletions2 = 0;
+        lastequality = null;
+        changes = true;
+      }
+    }
+    pointer++;
+  }
+  if (changes) {
+    diff_cleanupMerge(diffs);
+  }
+  diff_cleanupSemanticLossless(diffs);
+  pointer = 1;
+  while (pointer < diffs.length) {
+    if (diffs[pointer - 1][0] == DIFF_DELETE && diffs[pointer][0] == DIFF_INSERT) {
+      var deletion = diffs[pointer - 1][1];
+      var insertion = diffs[pointer][1];
+      var overlap_length1 = diff_commonOverlap_(deletion, insertion);
+      var overlap_length2 = diff_commonOverlap_(insertion, deletion);
+      if (overlap_length1 >= overlap_length2) {
+        if (overlap_length1 >= deletion.length / 2 || overlap_length1 >= insertion.length / 2) {
+          diffs.splice(pointer, 0, [
+            DIFF_EQUAL,
+            insertion.substring(0, overlap_length1)
+          ]);
+          diffs[pointer - 1][1] = deletion.substring(
+            0,
+            deletion.length - overlap_length1
+          );
+          diffs[pointer + 1][1] = insertion.substring(overlap_length1);
+          pointer++;
+        }
+      } else {
+        if (overlap_length2 >= deletion.length / 2 || overlap_length2 >= insertion.length / 2) {
+          diffs.splice(pointer, 0, [
+            DIFF_EQUAL,
+            deletion.substring(0, overlap_length2)
+          ]);
+          diffs[pointer - 1][0] = DIFF_INSERT;
+          diffs[pointer - 1][1] = insertion.substring(
+            0,
+            insertion.length - overlap_length2
+          );
+          diffs[pointer + 1][0] = DIFF_DELETE;
+          diffs[pointer + 1][1] = deletion.substring(overlap_length2);
+          pointer++;
+        }
+      }
+      pointer++;
+    }
+    pointer++;
+  }
+}
+var nonAlphaNumericRegex_ = /[^a-zA-Z0-9]/;
+var whitespaceRegex_ = /\s/;
+var linebreakRegex_ = /[\r\n]/;
+var blanklineEndRegex_ = /\n\r?\n$/;
+var blanklineStartRegex_ = /^\r?\n\r?\n/;
+function diff_cleanupSemanticLossless(diffs) {
+  function diff_cleanupSemanticScore_(one, two) {
+    if (!one || !two) {
+      return 6;
+    }
+    var char1 = one.charAt(one.length - 1);
+    var char2 = two.charAt(0);
+    var nonAlphaNumeric1 = char1.match(nonAlphaNumericRegex_);
+    var nonAlphaNumeric2 = char2.match(nonAlphaNumericRegex_);
+    var whitespace1 = nonAlphaNumeric1 && char1.match(whitespaceRegex_);
+    var whitespace2 = nonAlphaNumeric2 && char2.match(whitespaceRegex_);
+    var lineBreak1 = whitespace1 && char1.match(linebreakRegex_);
+    var lineBreak2 = whitespace2 && char2.match(linebreakRegex_);
+    var blankLine1 = lineBreak1 && one.match(blanklineEndRegex_);
+    var blankLine2 = lineBreak2 && two.match(blanklineStartRegex_);
+    if (blankLine1 || blankLine2) {
+      return 5;
+    } else if (lineBreak1 || lineBreak2) {
+      return 4;
+    } else if (nonAlphaNumeric1 && !whitespace1 && whitespace2) {
+      return 3;
+    } else if (whitespace1 || whitespace2) {
+      return 2;
+    } else if (nonAlphaNumeric1 || nonAlphaNumeric2) {
+      return 1;
+    }
+    return 0;
+  }
+  var pointer = 1;
+  while (pointer < diffs.length - 1) {
+    if (diffs[pointer - 1][0] == DIFF_EQUAL && diffs[pointer + 1][0] == DIFF_EQUAL) {
+      var equality1 = diffs[pointer - 1][1];
+      var edit = diffs[pointer][1];
+      var equality2 = diffs[pointer + 1][1];
+      var commonOffset = diff_commonSuffix(equality1, edit);
+      if (commonOffset) {
+        var commonString = edit.substring(edit.length - commonOffset);
+        equality1 = equality1.substring(0, equality1.length - commonOffset);
+        edit = commonString + edit.substring(0, edit.length - commonOffset);
+        equality2 = commonString + equality2;
+      }
+      var bestEquality1 = equality1;
+      var bestEdit = edit;
+      var bestEquality2 = equality2;
+      var bestScore = diff_cleanupSemanticScore_(equality1, edit) + diff_cleanupSemanticScore_(edit, equality2);
+      while (edit.charAt(0) === equality2.charAt(0)) {
+        equality1 += edit.charAt(0);
+        edit = edit.substring(1) + equality2.charAt(0);
+        equality2 = equality2.substring(1);
+        var score = diff_cleanupSemanticScore_(equality1, edit) + diff_cleanupSemanticScore_(edit, equality2);
+        if (score >= bestScore) {
+          bestScore = score;
+          bestEquality1 = equality1;
+          bestEdit = edit;
+          bestEquality2 = equality2;
+        }
+      }
+      if (diffs[pointer - 1][1] != bestEquality1) {
+        if (bestEquality1) {
+          diffs[pointer - 1][1] = bestEquality1;
+        } else {
+          diffs.splice(pointer - 1, 1);
+          pointer--;
+        }
+        diffs[pointer][1] = bestEdit;
+        if (bestEquality2) {
+          diffs[pointer + 1][1] = bestEquality2;
+        } else {
+          diffs.splice(pointer + 1, 1);
+          pointer--;
+        }
+      }
+    }
+    pointer++;
+  }
 }
 function diff_cleanupMerge(diffs, fix_unicode) {
   diffs.push([DIFF_EQUAL, ""]);
@@ -704,7 +877,10 @@ function diff_cleanupMerge(diffs, fix_unicode) {
         if (fix_unicode) {
           if (previous_equality >= 0 && ends_with_pair_start(diffs[previous_equality][1])) {
             var stray = diffs[previous_equality][1].slice(-1);
-            diffs[previous_equality][1] = diffs[previous_equality][1].slice(0, -1);
+            diffs[previous_equality][1] = diffs[previous_equality][1].slice(
+              0,
+              -1
+            );
             text_delete = stray + text_delete;
             text_insert = stray + text_insert;
             if (!diffs[previous_equality][1]) {
@@ -740,9 +916,15 @@ function diff_cleanupMerge(diffs, fix_unicode) {
             commonlength = diff_commonPrefix(text_insert, text_delete);
             if (commonlength !== 0) {
               if (previous_equality >= 0) {
-                diffs[previous_equality][1] += text_insert.substring(0, commonlength);
+                diffs[previous_equality][1] += text_insert.substring(
+                  0,
+                  commonlength
+                );
               } else {
-                diffs.splice(0, 0, [DIFF_EQUAL, text_insert.substring(0, commonlength)]);
+                diffs.splice(0, 0, [
+                  DIFF_EQUAL,
+                  text_insert.substring(0, commonlength)
+                ]);
                 pointer++;
               }
               text_insert = text_insert.substring(commonlength);
@@ -751,8 +933,14 @@ function diff_cleanupMerge(diffs, fix_unicode) {
             commonlength = diff_commonSuffix(text_insert, text_delete);
             if (commonlength !== 0) {
               diffs[pointer][1] = text_insert.substring(text_insert.length - commonlength) + diffs[pointer][1];
-              text_insert = text_insert.substring(0, text_insert.length - commonlength);
-              text_delete = text_delete.substring(0, text_delete.length - commonlength);
+              text_insert = text_insert.substring(
+                0,
+                text_insert.length - commonlength
+              );
+              text_delete = text_delete.substring(
+                0,
+                text_delete.length - commonlength
+              );
             }
           }
           var n = count_insert + count_delete;
@@ -766,7 +954,12 @@ function diff_cleanupMerge(diffs, fix_unicode) {
             diffs.splice(pointer - n, n, [DIFF_DELETE, text_delete]);
             pointer = pointer - n + 1;
           } else {
-            diffs.splice(pointer - n, n, [DIFF_DELETE, text_delete], [DIFF_INSERT, text_insert]);
+            diffs.splice(
+              pointer - n,
+              n,
+              [DIFF_DELETE, text_delete],
+              [DIFF_INSERT, text_insert]
+            );
             pointer = pointer - n + 2;
           }
         }
@@ -790,8 +983,13 @@ function diff_cleanupMerge(diffs, fix_unicode) {
   pointer = 1;
   while (pointer < diffs.length - 1) {
     if (diffs[pointer - 1][0] === DIFF_EQUAL && diffs[pointer + 1][0] === DIFF_EQUAL) {
-      if (diffs[pointer][1].substring(diffs[pointer][1].length - diffs[pointer - 1][1].length) === diffs[pointer - 1][1]) {
-        diffs[pointer][1] = diffs[pointer - 1][1] + diffs[pointer][1].substring(0, diffs[pointer][1].length - diffs[pointer - 1][1].length);
+      if (diffs[pointer][1].substring(
+        diffs[pointer][1].length - diffs[pointer - 1][1].length
+      ) === diffs[pointer - 1][1]) {
+        diffs[pointer][1] = diffs[pointer - 1][1] + diffs[pointer][1].substring(
+          0,
+          diffs[pointer][1].length - diffs[pointer - 1][1].length
+        );
         diffs[pointer + 1][1] = diffs[pointer - 1][1] + diffs[pointer + 1][1];
         diffs.splice(pointer - 1, 1);
         changes = true;
@@ -915,8 +1113,8 @@ function find_cursor_edit_diff(oldText, newText, cursor_pos) {
   }
   return null;
 }
-function diff(text1, text2, cursor_pos) {
-  return diff_main(text1, text2, cursor_pos, true);
+function diff(text1, text2, cursor_pos, cleanup) {
+  return diff_main(text1, text2, cursor_pos, cleanup, true);
 }
 diff.INSERT = DIFF_INSERT;
 diff.DELETE = DIFF_DELETE;
@@ -924,18 +1122,8 @@ diff.EQUAL = DIFF_EQUAL;
 var diff_1 = diff;
 class TextAreaBinding {
   constructor(yText, textField, options) {
-    Object.defineProperty(this, "_cursors", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: void 0
-    });
-    Object.defineProperty(this, "_unobserveFns", {
-      enumerable: true,
-      configurable: true,
-      writable: true,
-      value: []
-    });
+    __publicField(this, "_cursors");
+    __publicField(this, "_unobserveFns", []);
     let doc = yText.doc;
     if (doc === null) {
       throw new Error("Missing doc on yText");
